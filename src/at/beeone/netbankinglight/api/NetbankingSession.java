@@ -1,20 +1,15 @@
 package at.beeone.netbankinglight.api;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-
+import at.beeone.netbankinglight.api.model.*;
+import at.beeone.netbankinglight.util.JsonParser;
+import at.beeone.netbankinglight.util.RestCall;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import at.beeone.netbankinglight.api.model.Account;
-import at.beeone.netbankinglight.api.model.AccountSettings;
-import at.beeone.netbankinglight.api.model.Transaction;
-import at.beeone.netbankinglight.api.model.TransactionImpl;
-import at.beeone.netbankinglight.api.model.User;
-import at.beeone.netbankinglight.util.JsonParser;
-import at.beeone.netbankinglight.util.RestCall;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
 
 public class NetbankingSession {
 
@@ -286,7 +281,28 @@ public class NetbankingSession {
 		return result[0];
 	}
 
-	public void updateAccountSettings(Account account) {
+    public User getUser() {
+        return getUser(null);
+    }
+
+    public User getUser(ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId();
+        String response = newRestCall().resource(resource)
+                .expectedHttpSuccessCode(200).errorHandler(errorHandler).get();
+
+        if (response == null || response == "") {
+            return null;
+        }
+
+        try {
+            JSONObject json = new JSONObject(response);
+            return JsonParser.toUser(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void updateAccountSettings(Account account) {
 		updateAccountSettings(account.getIban(), account.getSettings());
 	}
 

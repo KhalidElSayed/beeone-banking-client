@@ -1,20 +1,19 @@
 package at.beeone.netbankinglight.test;
 
-import static org.junit.Assert.*;
-
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import at.beeone.netbankinglight.api.ErrorHandler;
 import at.beeone.netbankinglight.api.HttpError;
 import at.beeone.netbankinglight.api.NetbankingSession;
 import at.beeone.netbankinglight.api.model.Account;
 import at.beeone.netbankinglight.api.model.Transaction;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class IntegrationTest {
 
@@ -40,6 +39,9 @@ public class IntegrationTest {
 
 		// let's start with something simple:
 		assertTrue(session.ping());// the server is up and reachable
+
+
+        assertEquals(USERNAME, session.getUser().getUserName());
 
 		// a list of all accounts that the user owns.
 		List<Account> accounts = session.getAccounts();
