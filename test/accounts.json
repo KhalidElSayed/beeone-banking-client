@@ -1,0 +1,73 @@
+[
+    {
+        "availableFunds": 223600, 
+        "balance": 123600, 
+        "iban": "AT782011112345678901", 
+        "id": 1, 
+        "overdraft": 100000, 
+        "owners": [
+            {
+                "email": "michael.jakl@semanticlabs.at", 
+                "id": 1, 
+                "name": "Michael Jakl", 
+                "userName": "mjakl"
+            }
+        ], 
+        "settings": {
+            "name": "Current Account", 
+            "searchable": true
+        }, 
+        "type": "CURRENT"
+    }, 
+    {
+        "availableFunds": 204140, 
+        "balance": -95860, 
+        "iban": "AT152011139459744424", 
+        "id": 2, 
+        "overdraft": 300000, 
+        "owners": [
+            {
+                "email": "michael.jakl@semanticlabs.at", 
+                "id": 1, 
+                "name": "Michael Jakl", 
+                "userName": "mjakl"
+            }, 
+            {
+                "email": "michael.schuster@semanticlabs.at", 
+                "id": 2, 
+                "name": "Michael  Schuster", 
+                "userName": "smi"
+            }, 
+            {
+                "email": "tim@tpmgames.com", 
+                "id": 3, 
+                "name": "Tim Preuster", 
+                "userName": "tim"
+            }
+        ],         "settings": {
+            "name": "VISA", 
+            "searchable": true
+        }, 
+        "type": "VISA"
+    }, 
+    {
+        "availableFunds": -13880050, 
+        "balance": -13880050, 
+        "iban": "AT1234567", 
+        "id": 6, 
+        "overdraft": 0, 
+        "owners": [
+            {
+                "email": "michael.jakl@semanticlabs.at", 
+                "id": 1, 
+                "name": "Michael Jakl", 
+                "userName": "mjakl"
+            }
+        ], 
+        "settings": {
+            "name": "Loan Account", 
+            "searchable": true
+        }, 
+        "type": "LOAN"
+    }
+]

@@ -1,0 +1,41 @@
+{
+    "additionalText": null, 
+    "amount": 11990, 
+    "bill": "", 
+    "cancelled": false, 
+    "carryOutDate": 1350635542000, 
+    "category": "standingorderfix", 
+    "createdOn": 1350635542000, 
+    "customerData": "", 
+    "finished": true, 
+    "id": 1155, 
+    "identification": "", 
+    "notes": "", 
+    "owner": {
+        "availableFunds": 223600, 
+        "balance": 123600, 
+        "iban": "AT032011156172743372", 
+        "id": 1, 
+        "overdraft": 100000, 
+        "owners": [
+            {
+                "email": "tester1@beeone.at", 
+                "id": 1, 
+                "name": "Max Mustermann", 
+                "userName": "tester1"
+            }
+        ], 
+        "type": "CURRENT"
+    }, 
+    "purpose": "Abrechnung 10/2012", 
+    "receiverIban": "AT322466693116112", 
+    "receiverName": "StromGas GmbH", 
+    "receiverReference": null, 
+    "record": "", 
+    "senderIban": "AT782011112345678901", 
+    "senderName": null, 
+    "signature": "", 
+    "status": "PENDING", 
+    "tags": [], 
+    "type": "OUT"
+}
