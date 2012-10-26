@@ -3,13 +3,12 @@ beeone-banking-client
 
 API client for the BeeOne netbanking light API. 
 
-You should use this together with the REST api dokumentation for the netbanking API. I did not bother packaging this into a jar file, since you probably want to look or modify the code anyway.  
+You should use this together with the REST api dokumentation for the netbanking API. I did not bother packaging this into a jar file, since you probably want tohave the option to look at or modify the code anyway.  
 
 There are no dependencies necessary to run this on Android. Just add the source code to your project and you should be fine.
 If you need to use the API in a JDK project instead of Android, you also need to package the json parser in /lib with your project.
 
 
-    
     // create a new session for a user and login to the netbanking system
     NetbankingSession session = new NetbankingSession.Builder()
             .endpoint(ENDPOINT).username(USERNAME).password(PASSWORD)
