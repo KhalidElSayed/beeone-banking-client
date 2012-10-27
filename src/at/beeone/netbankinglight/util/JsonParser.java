@@ -135,6 +135,7 @@ public class JsonParser {
 		JSONObject ownerObj = transactionObj.getJSONObject("owner");
 		transaction.setAccount(toAccount(ownerObj));
 		transaction.setAmount(transactionObj.getLong("amount"));
+        transaction.setType(TransactionType.valueOf(getString(transactionObj, "type")));
 		transaction.setId(transactionObj.getString("id"));
 		transaction.setBill(getString(transactionObj, "bill"));
 		transaction.setCancelled(transactionObj.getBoolean("cancelled"));
