@@ -24,277 +24,318 @@ import org.json.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 public class NetbankingSession {
 
 
-	public static class Builder {
-		private URL endpoint;
-		private String username;
-		private String password;
+    public static class Builder {
+        private URL endpoint;
+        private String username;
+        private String password;
 
-		public Builder endpoint(String endpoint) {
-			try {
-				if (!endpoint.endsWith("/")) {
-					endpoint = endpoint + "/";
-				}
-				this.endpoint = new URL(endpoint);
-			} catch (MalformedURLException e) {
-				throw new RuntimeException(e);
-			}
-			return this;
-		}
+        public Builder endpoint(String endpoint) {
+            try {
+                if (!endpoint.endsWith("/")) {
+                    endpoint = endpoint + "/";
+                }
+                this.endpoint = new URL(endpoint);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+            return this;
+        }
 
-		public NetbankingSession login() {
-			NetbankingSession conn = new NetbankingSession(this);
-			conn.mUser = conn.login(username, password);
-			return conn;
-		}
+        public NetbankingSession login() {
+            NetbankingSession conn = new NetbankingSession(this);
+            conn.mUser = conn.login(username, password);
+            return conn;
+        }
 
-		public Builder password(String password) {
-			this.password = password;
-			return this;
-		}
+        public Builder password(String password) {
+            this.password = password;
+            return this;
+        }
 
-		public Builder username(String username) {
-			this.username = username;
-			return this;
-		}
+        public Builder username(String username) {
+            this.username = username;
+            return this;
+        }
 
-	}
+    }
 
-	private RestCall newRestCall() {
-		return mBuilder.build();
-	}
+    private RestCall newRestCall() {
+        return mBuilder.build();
+    }
 
-	private User mUser;
+    private User mUser;
 
-	private RestCall.Builder mBuilder;
+    private RestCall.Builder mBuilder;
 
-	private NetbankingSession(Builder builder) {
-		if (builder.endpoint == null) {
-			throw new AssertionError("you need to specify an endpoint URL");
-		}
+    private NetbankingSession(Builder builder) {
+        if (builder.endpoint == null) {
+            throw new AssertionError("you need to specify an endpoint URL");
+        }
 
-		mBuilder = new RestCall.Builder().authTokenField("X-BeeOne-Auth")
-				.endpoint(builder.endpoint)
-				.header("Content-Type", "application/json");
+        mBuilder = new RestCall.Builder().authTokenField("X-BeeOne-Auth")
+                .endpoint(builder.endpoint)
+                .header("Content-Type", "application/json");
 
-	}
+    }
 
-	public Transaction addTransaction(Account account, Transaction transaction) {
-		return addTransaction(account, transaction, null);
-	}
+    public Transaction addTransaction(Account account, Transaction transaction) {
+        return addTransaction(account, transaction, null);
+    }
 
-	public Transaction addTransaction(Account account, Transaction transaction,
-			ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/"
-				+ account.getIban() + "/transactions/";
+    public Transaction addTransaction(Account account, Transaction transaction,
+                                      ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/"
+                + account.getIban() + "/transactions/";
 
-		JSONObject json = JsonParser.toJSON(transaction);
-		RestCall restCall = newRestCall().resource(resource)
-				.errorHandler(errorHandler).body(json.toString());
-		String response = restCall.post();
+        JSONObject json = JsonParser.toJSON(transaction);
+        RestCall restCall = newRestCall().resource(resource)
+                .errorHandler(errorHandler).body(json.toString());
+        String response = restCall.post();
 
-		if (response == null) {
-			return null;
-		}
+        if (response == null) {
+            return null;
+        }
 
-		try {
-			return JsonParser.toTransaction(new JSONObject(response));
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        try {
+            return JsonParser.toTransaction(new JSONObject(response));
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public void deleteTransaction(Transaction transaction) {
-		deleteTransaction(transaction, null);
-	}
+    public void deleteTransaction(Transaction transaction) {
+        deleteTransaction(transaction, null);
+    }
 
-	public void deleteTransaction(Transaction transaction,
-			ErrorHandler errorHandler) {
+    public List<Transaction> signTransactions(List<Transaction> transactions) {
+        return signTransactions(transactions, null);
+    }
 
-		String resource = "user/" + mUser.getId() + "/accounts/"
-				+ transaction.getAccount().getIban() + "/transactions/"
-				+ transaction.getId();
+    public List<Transaction> signTransactions(List<Transaction> transactions, ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/signer/sign";
+        RestCall restCall = newRestCall().errorHandler(errorHandler).resource(
+                resource).header("Content-Type", "application/x-www-form-urlencoded");
+        for (Transaction transaction : transactions) {
+            restCall = restCall.param("transactionIds", transaction.getId());
+        }
+        restCall.param("signature", "something valid");
 
-		RestCall restCall = newRestCall().errorHandler(errorHandler).resource(
-				resource);
-		String response = restCall.delete();
-	}
+        String response = restCall.post();
+        if (response == null) {
+            return null;
+        }
 
-	public Account getAccount(String iban) {
-		return getAccount(iban, null);
-	}
+        try {
+            JSONArray json = new JSONArray(response);
 
-	public Account getAccount(String iban, ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/" + iban;
-		try {
-			String response = newRestCall().resource(resource)
-					.errorHandler(errorHandler).get();
-			if (response == null) {
-				return null;
-			}
+            List<Transaction> transactionList = JsonParser
+                    .toTransactionList(json);
 
-			JSONObject json = new JSONObject(response);
-			return JsonParser.toAccount(json);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            return transactionList;
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public List<Account> getAccounts() {
-		return getAccounts(null);
-	}
+    public Transaction signTransaction(Transaction transaction, ErrorHandler errorHandler) {
+        List<Transaction> transactions = this.signTransactions(Arrays.asList(new Transaction[]{transaction}), errorHandler);
+        return transactions.isEmpty() ? null : transactions.iterator().next();
+    }
 
-	public List<Transaction> searchTransactions(String query, Integer pageSize,
-			Integer page) {
-		return searchTransactions(query, pageSize, page, null);
-	}
+    public Transaction signTransaction(Transaction transaction) {
+        List<Transaction> transactions = this.signTransactions(Arrays.asList(new Transaction[]{transaction}));
+        return transactions.isEmpty() ? null : transactions.iterator().next();
+    }
 
-	public List<Transaction> searchTransactions(String query, Integer pageSize,
-			Integer page, ErrorHandler errorHandler) {
+    public void deleteTransaction(Transaction transaction,
+                                  ErrorHandler errorHandler) {
 
-		String resource = "user/" + mUser.getId() + "/search/transactions";
-		String response = newRestCall().resource(resource)
-				.errorHandler(errorHandler).param("q", query)
-				.param("pageSize", pageSize.toString())
-				.param("page", page.toString()).get();
+        String resource = "user/" + mUser.getId() + "/accounts/"
+                + transaction.getAccount().getIban() + "/transactions/"
+                + transaction.getId();
 
-		if (response == null) {
-			return null;
-		}
+        RestCall restCall = newRestCall().errorHandler(errorHandler).resource(
+                resource);
+        String response = restCall.delete();
+    }
 
-		try {
-			JSONObject json = new JSONObject(response);
+    public Account getAccount(String iban) {
+        return getAccount(iban, null);
+    }
 
-			List<Transaction> transactionList = JsonParser
-					.toTransactionList(json.getJSONArray("transactions"));
+    public Account getAccount(String iban, ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/" + iban;
+        try {
+            String response = newRestCall().resource(resource)
+                    .errorHandler(errorHandler).get();
+            if (response == null) {
+                return null;
+            }
 
-			return transactionList;
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            JSONObject json = new JSONObject(response);
+            return JsonParser.toAccount(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public List<Account> getAccounts(ErrorHandler errorHandler) {
-		try {
-			String resource = "user/" + mUser.getId() + "/accounts";
+    public List<Account> getAccounts() {
+        return getAccounts(null);
+    }
 
-			String response = newRestCall().errorHandler(errorHandler)
-					.resource(resource).expectedHttpSuccessCode(200).get();
+    public List<Transaction> searchTransactions(String query, Integer pageSize,
+                                                Integer page) {
+        return searchTransactions(query, pageSize, page, null);
+    }
 
-			if (response == null) {
-				return null;
-			}
-			JSONArray json = new JSONArray(response);
-			return JsonParser.toAccountList(json);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    public List<Transaction> searchTransactions(String query, Integer pageSize,
+                                                Integer page, ErrorHandler errorHandler) {
 
-	public Transaction getTransaction(Account account, String id) {
-		return getTransaction(account, id, null);
-	}
+        String resource = "user/" + mUser.getId() + "/search/transactions";
+        String response = newRestCall().resource(resource)
+                .errorHandler(errorHandler).param("q", query)
+                .param("pageSize", pageSize.toString())
+                .param("page", page.toString()).get();
 
-	public Transaction getTransaction(Account account, String id,
-			ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/"
-				+ account.getIban() + "/transactions/" + id;
-		String response = newRestCall().resource(resource)
-				.expectedHttpSuccessCode(200).errorHandler(errorHandler).get();
+        if (response == null) {
+            return null;
+        }
 
-		if (response == null || response == "") {
-			return null;
-		}
+        try {
+            JSONObject json = new JSONObject(response);
 
-		try {
-			JSONObject json = new JSONObject(response);
-			return JsonParser.toTransaction(json);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            List<Transaction> transactionList = JsonParser
+                    .toTransactionList(json.getJSONArray("transactions"));
 
-	public List<Transaction> getTransactions(String iban, Integer pageSize,
-			Integer page) {
-		return getTransactions(iban, pageSize, page, null);
-	}
+            return transactionList;
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public List<Transaction> getTransactions(String iban, Integer pageSize,
-			Integer page, ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/" + iban
-				+ "/transactions";
+    public List<Account> getAccounts(ErrorHandler errorHandler) {
+        try {
+            String resource = "user/" + mUser.getId() + "/accounts";
 
-		String response = newRestCall().resource(resource)
-				.errorHandler(errorHandler)
-				.param("pageSize", pageSize.toString())
-				.param("page", page.toString()).get();
+            String response = newRestCall().errorHandler(errorHandler)
+                    .resource(resource).expectedHttpSuccessCode(200).get();
 
-		if (response == null) {
-			return null;
-		}
+            if (response == null) {
+                return null;
+            }
+            JSONArray json = new JSONArray(response);
+            return JsonParser.toAccountList(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-		try {
-			JSONObject json = new JSONObject(response);
+    public Transaction getTransaction(Account account, String id) {
+        return getTransaction(account, id, null);
+    }
 
-			List<Transaction> transactionList = JsonParser
-					.toTransactionList(json.getJSONArray("transactions"));
+    public Transaction getTransaction(Account account, String id,
+                                      ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/"
+                + account.getIban() + "/transactions/" + id;
+        String response = newRestCall().resource(resource)
+                .expectedHttpSuccessCode(200).errorHandler(errorHandler).get();
 
-			return transactionList;
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
+        if (response == null || response == "") {
+            return null;
+        }
 
-	}
+        try {
+            JSONObject json = new JSONObject(response);
+            return JsonParser.toTransaction(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	private User login(String username, String password) {
-		return login(username, password, null);
-	}
+    public List<Transaction> getTransactions(String iban, Integer pageSize,
+                                             Integer page) {
+        return getTransactions(iban, pageSize, page, null);
+    }
 
-	private User login(String username, String password,
-			ErrorHandler errorHandler) {
-		JSONObject json;
-		try {
+    public List<Transaction> getTransactions(String iban, Integer pageSize,
+                                             Integer page, ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/" + iban
+                + "/transactions";
 
-			String response = newRestCall().resource("login")
-					.errorHandler(errorHandler).param("username", username)
-					.param("password", password).post();
+        String response = newRestCall().resource(resource)
+                .errorHandler(errorHandler)
+                .param("pageSize", pageSize.toString())
+                .param("page", page.toString()).get();
 
-			if (response == null) {
-				return null;
-			}
+        if (response == null) {
+            return null;
+        }
 
-			json = new JSONObject(response);
-			return JsonParser.toUser(json);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        try {
+            JSONObject json = new JSONObject(response);
 
-	public void logout(String username, String password,
-			ErrorHandler errorHandler) {
-		newRestCall().resource("logout").errorHandler(errorHandler).post();
-	}
+            List<Transaction> transactionList = JsonParser
+                    .toTransactionList(json.getJSONArray("transactions"));
 
-	public Transaction newTransaction() {
-		TransactionImpl transactionImpl = new TransactionImpl();
-		return transactionImpl;
-	}
+            return transactionList;
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
 
-	public boolean ping() {
-		final boolean[] result = new boolean[] { true };
-		newRestCall().resource("debug/ping").expectedHttpSuccessCode(200)
-				.errorHandler(new ErrorHandler() {
-					@Override
-					public void onError(HttpError status) {
-						result[0] = false;
-					}
-				}).get();
-		return result[0];
-	}
+    }
+
+    private User login(String username, String password) {
+        return login(username, password, null);
+    }
+
+    private User login(String username, String password,
+                       ErrorHandler errorHandler) {
+        JSONObject json;
+        try {
+
+            String response = newRestCall().resource("login")
+                    .errorHandler(errorHandler).param("username", username)
+                    .param("password", password).post();
+
+            if (response == null) {
+                return null;
+            }
+
+            json = new JSONObject(response);
+            return JsonParser.toUser(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void logout(String username, String password,
+                       ErrorHandler errorHandler) {
+        newRestCall().resource("logout").errorHandler(errorHandler).post();
+    }
+
+    public Transaction newTransaction() {
+        TransactionImpl transactionImpl = new TransactionImpl();
+        return transactionImpl;
+    }
+
+    public boolean ping() {
+        final boolean[] result = new boolean[]{true};
+        newRestCall().resource("debug/ping").expectedHttpSuccessCode(200)
+                .errorHandler(new ErrorHandler() {
+                    @Override
+                    public void onError(HttpError status) {
+                        result[0] = false;
+                    }
+                }).get();
+        return result[0];
+    }
 
     public User getUser() {
         return getUser(null);
@@ -318,59 +359,59 @@ public class NetbankingSession {
     }
 
     public void updateAccountSettings(Account account) {
-		updateAccountSettings(account.getIban(), account.getSettings());
-	}
+        updateAccountSettings(account.getIban(), account.getSettings());
+    }
 
-	public void updateAccountSettings(Account account, ErrorHandler errorHandler) {
-		updateAccountSettings(account.getIban(), account.getSettings(),
-				errorHandler);
-	}
+    public void updateAccountSettings(Account account, ErrorHandler errorHandler) {
+        updateAccountSettings(account.getIban(), account.getSettings(),
+                errorHandler);
+    }
 
-	private void updateAccountSettings(String iban, AccountSettings newSettings) {
-		updateAccountSettings(iban, newSettings, null);
-	}
+    private void updateAccountSettings(String iban, AccountSettings newSettings) {
+        updateAccountSettings(iban, newSettings, null);
+    }
 
-	private void updateAccountSettings(String iban,
-			AccountSettings newSettings, ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/" + iban;
-		try {
-			JSONObject obj = new JSONObject();
-			obj.put("name", newSettings.getName());
-			obj.put("searchable", newSettings.isSearchable() ? "true" : "false");
+    private void updateAccountSettings(String iban,
+                                       AccountSettings newSettings, ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/" + iban;
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("name", newSettings.getName());
+            obj.put("searchable", newSettings.isSearchable() ? "true" : "false");
 
-			RestCall restCall = newRestCall().resource(resource)
-					.errorHandler(errorHandler).body(obj.toString());
+            RestCall restCall = newRestCall().resource(resource)
+                    .errorHandler(errorHandler).body(obj.toString());
 
-			restCall.put();
+            restCall.put();
 
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public Transaction updateTransaction(Transaction transaction) {
-		return updateTransaction(transaction, null);
-	}
+    public Transaction updateTransaction(Transaction transaction) {
+        return updateTransaction(transaction, null);
+    }
 
-	public Transaction updateTransaction(Transaction transaction,
-			ErrorHandler errorHandler) {
-		String resource = "user/" + mUser.getId() + "/accounts/"
-				+ transaction.getAccount().getIban() + "/transactions/"
-				+ transaction.getId();
+    public Transaction updateTransaction(Transaction transaction,
+                                         ErrorHandler errorHandler) {
+        String resource = "user/" + mUser.getId() + "/accounts/"
+                + transaction.getAccount().getIban() + "/transactions/"
+                + transaction.getId();
 
-		JSONObject json = JsonParser.toJSON(transaction);
-		RestCall restCall = newRestCall().resource(resource)
-				.errorHandler(errorHandler).body(json.toString());
-		String response = restCall.put();
+        JSONObject json = JsonParser.toJSON(transaction);
+        RestCall restCall = newRestCall().resource(resource)
+                .errorHandler(errorHandler).body(json.toString());
+        String response = restCall.put();
 
-		if (response == null) {
-			return null;
-		}
+        if (response == null) {
+            return null;
+        }
 
-		try {
-			return JsonParser.toTransaction(new JSONObject(response));
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        try {
+            return JsonParser.toTransaction(new JSONObject(response));
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

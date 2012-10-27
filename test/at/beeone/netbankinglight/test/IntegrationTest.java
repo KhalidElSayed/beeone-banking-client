@@ -20,6 +20,7 @@ import at.beeone.netbankinglight.api.HttpError;
 import at.beeone.netbankinglight.api.NetbankingSession;
 import at.beeone.netbankinglight.api.model.Account;
 import at.beeone.netbankinglight.api.model.Transaction;
+import at.beeone.netbankinglight.api.model.TransactionStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
 
 public class IntegrationTest {
 
-	private static final String ENDPOINT = "http://localhost:8080/api/";
+	private static final String ENDPOINT = "http://nblight-test.elasticbeanstalk.com/api/";
 	private static final String USERNAME = "tester1";
 	private static final String PASSWORD = "pwd";
 
@@ -139,8 +140,11 @@ public class IntegrationTest {
 			fail();
 		}
 
-		// finally, we can delete the transaction
-		session.deleteTransaction(ourTransaction);
+        Transaction transaction = session.signTransaction(ourTransaction);
+        assertEquals(TransactionStatus.UPCOMING,transaction.getStatus());
+
+                // finally, we can delete the transaction
+                session.deleteTransaction(ourTransaction);
 
 		// let's get some transactions from the account
 		int pageSize = 16;
