@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 
 public class IntegrationTest {
 
-	private static final String ENDPOINT = "http://nblight-test.elasticbeanstalk.com/api/";
+	private static final String ENDPOINT = "http://localhost:8080/api/";
 	private static final String USERNAME = "tester1";
 	private static final String PASSWORD = "pwd";
 
